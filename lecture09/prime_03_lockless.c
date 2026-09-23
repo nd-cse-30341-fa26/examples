@@ -10,8 +10,8 @@
 
 /* Constants */
 
-const size_t NCPUS     = 8;
-const size_t PRIME_MAX = 400000;
+const size_t NUM_THREADS = 8;
+const size_t PRIME_MAX   = 400000;
 
 /* Structure */
 
@@ -43,19 +43,20 @@ void * count_primes(void *arg) {
 }
 
 int main(int argc, char *argv[]) {
-    pthread_t threads[NCPUS];		    // Array of threads
-    PrimeArgs args[NCPUS];		    // Array of arguments
-    size_t count = 0, result;
+    pthread_t threads[NUM_THREADS];		    // Array of threads
+    PrimeArgs args[NUM_THREADS];		    // Array of arguments
+    size_t count = 0;
 
-    for (size_t i = 0; i < NCPUS; i++) {    // Division of work
-    	args[i].start = max(2, i*PRIME_MAX/NCPUS);
-    	args[i].stop  = (i+1)*PRIME_MAX/NCPUS;
-    	pthread_create(&threads[i], NULL, count_primes, &args[i]);
+    for (size_t t = 0; t < NUM_THREADS; t++) {	    // Division of work
+    	args[t].start = max(2, t*PRIME_MAX/NUM_THREADS);
+    	args[t].stop  = (t+1)*PRIME_MAX/NUM_THREADS;
+    	pthread_create(&threads[t], NULL, count_primes, &args[t]);
     }
 
-    for (size_t i = 0; i < NCPUS; i++) {    // Wait for threads
-    	pthread_join(threads[i], (void **)&result);
-    	count += result;
+    size_t thread_count = 0;
+    for (size_t t = 0; t < NUM_THREADS; t++) {	    // Wait for threads
+    	pthread_join(threads[t], (void **)&thread_count);
+    	count += thread_count;
     }
 
     printf("There are %lu primes less than %ld\n", count, PRIME_MAX);

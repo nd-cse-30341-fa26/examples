@@ -10,8 +10,8 @@
 
 /* Constants */
 
-const size_t NCPUS     = 8;
-const size_t PRIME_MAX = 400000;
+const size_t NUM_THREADS = 8;
+const size_t PRIME_MAX	 = 400000;
 
 /* Structure */
 
@@ -40,6 +40,7 @@ size_t is_prime(size_t n) {
 void * count_primes_1(void *arg) {	    // Version 1: lock each check
     PrimeArgs *pa = (PrimeArgs *)arg;
     printf("start=%lu, stop=%lu\n", pa->start, pa->stop);
+
     for (size_t n = pa->start; n < pa->stop; n++) {
     	pthread_mutex_lock(&Lock);
     	Count += is_prime(n);
@@ -50,29 +51,31 @@ void * count_primes_1(void *arg) {	    // Version 1: lock each check
 
 void * count_primes_2(void *arg) {	    // Version 2: only lock once
     PrimeArgs *pa = (PrimeArgs *)arg;
-    size_t  count = 0;
     printf("start=%lu, stop=%lu\n", pa->start, pa->stop);
+
+    size_t local_count = 0;
     for (size_t n = pa->start; n < pa->stop; n++) {
-    	count += is_prime(n);
+    	local_count += is_prime(n);
     }
+
     pthread_mutex_lock(&Lock);
-    Count += count;
+    Count += local_count;
     pthread_mutex_unlock(&Lock);
     return NULL;
 }
 
 int main(int argc, char *argv[]) {
-    pthread_t threads[NCPUS];		    // Array of threads
-    PrimeArgs args[NCPUS];		    // Array of arguments
+    pthread_t threads[NUM_THREADS];		// Array of threads
+    PrimeArgs args[NUM_THREADS];		// Array of arguments
 
-    for (size_t i = 0; i < NCPUS; i++) {    // Division of work
-    	args[i].start = max(2, i*PRIME_MAX/NCPUS);
-    	args[i].stop  = (i+1)*PRIME_MAX/NCPUS;
-    	pthread_create(&threads[i], NULL, count_primes_2, &args[i]);
+    for (size_t t = 0; t < NUM_THREADS; t++) {	// Division of work
+    	args[t].start = max(2, t*PRIME_MAX/NUM_THREADS);
+    	args[t].stop  = (t+1)*PRIME_MAX/NUM_THREADS;
+    	pthread_create(&threads[t], NULL, count_primes_2, &args[t]);
     }
 
-    for (size_t i = 0; i < NCPUS; i++) {    // Wait for threads
-    	pthread_join(threads[i], NULL);
+    for (size_t t = 0; t < NUM_THREADS; t++) {  // Wait for threads
+    	pthread_join(threads[t], NULL);
     }
 
     printf("There are %lu primes less than %ld\n", Count, PRIME_MAX);
