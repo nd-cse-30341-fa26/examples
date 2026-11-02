@@ -58,7 +58,7 @@ Block * block_detach(Block *block) {
 
 /* Free List Global Variable */
 
-Block FreeList = {-1, -1, &FreeList, &FreeList};
+Block FreeList = {0, 0, &FreeList, &FreeList};
 
 /* Free List Functions */
 
@@ -95,7 +95,7 @@ void *malloc(size_t size) {
         return NULL;
     }
 
-    // Search free list for any available block with matching size
+    /* Search free list for any available block with matching size */
     Block *block = free_list_search(size);
 
     if (!block) {
